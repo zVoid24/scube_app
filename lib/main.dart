@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/presentation/summary.dart';
+import 'package:flutter_application_1/presentation/pages/product_page.dart';
+import 'package:get/get.dart';
 
 void main() {
-  runApp(MaterialApp(
-    home: PowerCutScreen(),
-  ));
+  runApp(GetMaterialApp(home: ProductPage()));
 }
 
 // class MyApp extends StatelessWidget {
