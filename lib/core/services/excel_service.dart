@@ -131,18 +131,25 @@ class ExcelService {
     String label,
     String value,
   ) {
+    // LABEL CELL (C)
     final labelCell = sheet.getRangeByName(cell);
     labelCell.setText(label);
     labelCell.cellStyle
       ..bold = true
+      ..hAlign = HAlignType.left
+      ..vAlign = VAlignType.center
       ..borders.all.lineStyle = LineStyle.thin;
 
     final row = labelCell.row;
 
-    final valueCell = sheet.getRangeByIndex(row, 4); // Column D
+    // MERGE VALUE CELLS (D → H)
+    sheet.getRangeByName('D$row:E$row').merge();
+
+    final valueCell = sheet.getRangeByIndex(row, 4);
     valueCell.setText(value);
     valueCell.cellStyle
-      ..wrapText = true
+      ..hAlign = HAlignType.left
+      ..vAlign = VAlignType.center
       ..borders.all.lineStyle = LineStyle.thin;
   }
 }
