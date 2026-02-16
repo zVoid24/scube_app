@@ -33,14 +33,20 @@ class ExcelService {
     /// ─────────────────────────────
     /// LOGO (A1:D5)
     /// ─────────────────────────────
-    sheet.getRangeByName('A1:B5').merge();
+    sheet.getRangeByName('A1:B4').merge();
+    for (int i = 1; i < 5; i++) {
+      sheet.getRangeByIndex(i, 1).rowHeight = 22;
+    }
 
     final ByteData logoData = await rootBundle.load('assets/Logo-scube.png');
     final Uint8List logoBytes = logoData.buffer.asUint8List();
+    final picture = sheet.pictures.addStream(1, 1, logoBytes);
+    picture.height = 110;
+    picture.width = 200;
 
-    sheet.pictures.addStream(1, 1, logoBytes)
-      ..height = 110
-      ..width = 200;
+    // // Anchor image strictly to cell
+    // picture.moveWithCells = true;
+    // picture.sizeWithCells = false;
 
     /// ─────────────────────────────
     /// PROJECT INFO (E1:H5)
@@ -53,7 +59,7 @@ class ExcelService {
     /// ─────────────────────────────
     /// TABLE HEADER (Dynamic)
     /// ─────────────────────────────
-    final headerRowIndex = 7;
+    final headerRowIndex = 6;
 
     for (int col = 0; col < headers.length; col++) {
       final cell = sheet.getRangeByIndex(headerRowIndex, col + 1);
@@ -74,6 +80,7 @@ class ExcelService {
       for (int colIndex = 0; colIndex < rows[rowIndex].length; colIndex++) {
         final cell = sheet.getRangeByIndex(excelRow, colIndex + 1);
         cell.setText(rows[rowIndex][colIndex]);
+        cell.cellStyle.hAlign = HAlignType.center;
         cell.cellStyle.borders.all.lineStyle = LineStyle.thin;
       }
     }
@@ -135,7 +142,7 @@ class ExcelService {
     final valueCell = sheet.getRangeByIndex(row, 4); // Column D
     valueCell.setText(value);
     valueCell.cellStyle
-      //..wrapText = true
+      ..wrapText = true
       ..borders.all.lineStyle = LineStyle.thin;
   }
 }
