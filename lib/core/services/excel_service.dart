@@ -102,7 +102,7 @@ class ExcelService {
       ..fontColor = '#305496'; // dark blue text
 
     // Optional border on top
-    footerStyle.borders.top.lineStyle = LineStyle.thin;
+    // footerStyle.borders.top.lineStyle = LineStyle.thin;
 
     /// ─────────────────────────────
     /// SAVE
