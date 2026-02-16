@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:open_filex/open_filex.dart';
+import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
 
 class FileHelper {
@@ -9,9 +9,11 @@ class FileHelper {
     String fileName, {
     required String mime,
   }) async {
-    final dir = await getApplicationDocumentsDirectory();
-    final file = File('${dir.path}/$fileName');
+    final directory = await getApplicationDocumentsDirectory();
+    final file = File('${directory.path}/$fileName');
+
     await file.writeAsBytes(bytes, flush: true);
-    await OpenFilex.open(file.path);
+
+    await OpenFile.open(file.path, type: mime);
   }
 }
