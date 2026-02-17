@@ -44,7 +44,26 @@ class ProductController extends GetxController {
   }
 
   void downloadPdf() {
-    print("Hello world");
-    PdfService.generate(products);
+    // Convert product list to table data (same idea as Excel)
+    final excelData = ExcelMapper.fromList<Product>(
+      products,
+      (product) => product.toJson(),
+    );
+
+    final tableData = PdfTableData(
+      headers: List<String>.from(excelData['headers']),
+      rows: List<List<String>>.from(excelData['rows']),
+    );
+
+    PdfService.generate(
+      tableData: tableData,
+      projectName: 'Paragon Poultry Ltd.',
+      address: 'Haluaghat, Mymensingh, Bangladesh',
+      userName: 'Karim Ahmed',
+      dateandtime: '27 Jan 2026, 10:30 am',
+      installedDCCap: "500 kWp",
+      plantAcCap: '450 kWp',
+      fileName: 'products_report.pdf',
+    );
   }
 }
