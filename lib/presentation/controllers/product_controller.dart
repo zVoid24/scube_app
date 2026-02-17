@@ -44,6 +44,7 @@ class ProductController extends GetxController {
   }
 
   void downloadPdf() {
+    print("Hello world");
     PdfService.generate(products);
   }
 }
