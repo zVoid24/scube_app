@@ -4,7 +4,7 @@ import 'package:syncfusion_flutter_xlsio/xlsio.dart';
 
 class ExcelLayout {
   static Future<void> addLogo(Worksheet sheet, Workbook workbook) async {
-    sheet.getRangeByName('A1:B4').merge();
+    sheet.getRangeByName('A1:A4').merge();
 
     for (int i = 1; i <= 4; i++) {
       sheet.getRangeByIndex(i, 1).rowHeight = 22;
@@ -14,8 +14,8 @@ class ExcelLayout {
     final Uint8List bytes = data.buffer.asUint8List();
 
     final picture = sheet.pictures.addStream(1, 1, bytes);
-    picture.height = 110;
-    picture.width = 200;
+    picture.height = 120;
+    picture.width = 130;
   }
 
   static void addInfoRow(
@@ -25,13 +25,13 @@ class ExcelLayout {
     String label,
     String value,
   ) {
-    sheet.getRangeByName('C$row:D$row').merge();
-    final labelCell = sheet.getRangeByIndex(row, 3);
+    sheet.getRangeByName('B$row:C$row').merge();
+    final labelCell = sheet.getRangeByIndex(row, 2);
     labelCell.setText(label);
     labelCell.cellStyle = ExcelStyles.infoLabel(workbook);
 
-    sheet.getRangeByName('E$row:F$row').merge();
-    final valueCell = sheet.getRangeByIndex(row, 5);
+    sheet.getRangeByName('D$row:E$row').merge();
+    final valueCell = sheet.getRangeByIndex(row, 4);
     valueCell.setText(value);
     valueCell.cellStyle = ExcelStyles.infoValue(workbook);
   }
