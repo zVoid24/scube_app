@@ -44,16 +44,28 @@ class ProductController extends GetxController {
   }
 
   void downloadPdf() {
-    // Convert product list to table data (same idea as Excel)
     final excelData = ExcelMapper.fromList<Product>(
       products,
       (product) => product.toJson(),
     );
 
-    final tableData = PdfTableData(
-      headers: List<String>.from(excelData['headers']),
-      rows: List<List<String>>.from(excelData['rows']),
-    );
+    // Clone original
+    final headers = List<String>.from(excelData['headers']);
+    final rows = excelData['rows']
+        .map<List<String>>((row) => List<String>.from(row))
+        .toList();
+
+    // ADD EXTRA TEST COLUMNS
+    const extraColumnCount = 100;
+
+    for (int i = 1; i <= extraColumnCount; i++) {
+      headers.add('Extra $i');
+      for (final row in rows) {
+        row.add('Value $i');
+      }
+    }
+
+    final tableData = PdfTableData(headers: headers, rows: rows);
 
     PdfService.generate(
       tableData: tableData,

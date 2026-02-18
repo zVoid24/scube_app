@@ -21,25 +21,27 @@ class PdfService {
     String fileName = 'report.pdf',
   }) async {
     // =====================
-    // PAGE HEIGHT CALCULATION (ONE PAGE GUARANTEE)
+    // DYNAMIC PAGE SIZE
     // =====================
+    const double columnWidth = 140;
+    const double footerHeight = 35;
+    const double topContentHeight = 300;
     const double rowHeight = 28;
     const double headerHeight = 40;
-    const double topContentHeight = 300;
-    const double footerHeight = 35;
 
+    // Calculate width from column count
+    final double pageWidth = (tableData.headers.length * columnWidth) + 40;
+
+    // Calculate height from row count
     final double tableHeight =
         (tableData.rows.length * rowHeight) + headerHeight;
 
     final double pageHeight =
         topContentHeight + tableHeight + footerHeight + 50;
 
-    // =====================
-    // DOCUMENT SETTINGS
-    // =====================
     final document = PdfDocument();
 
-    document.pageSettings.size = Size(2000, pageHeight);
+    document.pageSettings.size = Size(pageWidth, pageHeight);
     document.pageSettings.orientation = PdfPageOrientation.landscape;
     document.pageSettings.margins.all = 20;
 
@@ -47,18 +49,19 @@ class PdfService {
     // FOOTER
     // =====================
     final footer = PdfPageTemplateElement(
-      Rect.fromLTWH(0, 0, 2000, footerHeight),
+      Rect.fromLTWH(0, 0, pageWidth, footerHeight),
     );
 
     footer.graphics.drawRectangle(
       brush: PdfSolidBrush(PdfColor(190, 225, 245)),
-      bounds: Rect.fromLTWH(0, 0, 2000, footerHeight),
+      bounds: Rect.fromLTWH(0, 0, pageWidth, footerHeight),
     );
 
     footer.graphics.drawString(
       'Data Source : SolScada / Powered by : Scube Technologies Ltd.',
       PdfStandardFont(PdfFontFamily.helvetica, 10, style: PdfFontStyle.bold),
-      bounds: Rect.fromLTWH(0, 8, 2000, 20),
+      bounds: Rect.fromLTWH(0, 0, pageWidth, footerHeight),
+
       format: PdfStringFormat(alignment: PdfTextAlignment.center),
     );
 
@@ -69,7 +72,7 @@ class PdfService {
     // =====================
     final page = document.pages.add();
     double cursorY = 0;
-    final pageWidth = page.getClientSize().width;
+    // final pageWidth = page.getClientSize().width;
 
     // =====================
     // FONTS
@@ -100,7 +103,7 @@ class PdfService {
     final logoData = await rootBundle.load('assets/Logo-scube.png');
     final logoImage = PdfBitmap(logoData.buffer.asUint8List());
 
-    page.graphics.drawImage(logoImage, Rect.fromLTWH(0, cursorY, 280, 180));
+    page.graphics.drawImage(logoImage, Rect.fromLTWH(0, cursorY, 280, 130));
 
     // =====================
     // PROJECT INFO
@@ -110,9 +113,14 @@ class PdfService {
       headerFont,
       bounds: Rect.fromLTWH(300, cursorY, pageWidth - 300, 20),
     );
+    const double infoTableWidth = 520; // ideal for 2-column metadata
+    const double infoLabelWidth = 220;
+    const double infoValueWidth = 300;
 
     final infoGrid = PdfGrid();
     infoGrid.columns.add(count: 2);
+    infoGrid.columns[0].width = infoLabelWidth;
+    infoGrid.columns[1].width = infoValueWidth;
 
     void addInfo(String k, String v) {
       final r = infoGrid.rows.add();
@@ -131,7 +139,7 @@ class PdfService {
 
     final infoResult = infoGrid.draw(
       page: page,
-      bounds: Rect.fromLTWH(300, cursorY + 25, pageWidth - 300, 0),
+      bounds: Rect.fromLTWH(300, cursorY + 25, infoTableWidth, 0),
     )!;
 
     cursorY =
@@ -156,6 +164,9 @@ class PdfService {
     table.headers.add(1);
 
     final headerRow = table.headers[0];
+    for (int i = 0; i < table.columns.count; i++) {
+      table.columns[i].width = columnWidth;
+    }
 
     for (int i = 0; i < tableData.headers.length; i++) {
       headerRow.cells[i].value = tableData.headers[i];

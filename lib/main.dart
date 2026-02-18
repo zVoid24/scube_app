@@ -1,124 +1,172 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/presentation/pages/product_page.dart';
-import 'package:get/get.dart';
+import 'package:syncfusion_flutter_datagrid/datagrid.dart';
 
 void main() {
-  runApp(GetMaterialApp(home: ProductPage()));
+  runApp(const MyApp());
 }
 
-// class MyApp extends StatelessWidget {
-//   const MyApp({super.key});
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
-//   // This widget is the root of your application.
-//   @override
-//   Widget build(BuildContext context) {
-//     return MaterialApp(
-//       title: 'Flutter Demo',
-//       theme: ThemeData(
-//         // This is the theme of your application.
-//         //
-//         // TRY THIS: Try running your application with "flutter run". You'll see
-//         // the application has a purple toolbar. Then, without quitting the app,
-//         // try changing the seedColor in the colorScheme below to Colors.green
-//         // and then invoke "hot reload" (save your changes or press the "hot
-//         // reload" button in a Flutter-supported IDE, or press "r" if you used
-//         // the command line to start the app).
-//         //
-//         // Notice that the counter didn't reset back to zero; the application
-//         // state is not lost during the reload. To reset the state, use hot
-//         // restart instead.
-//         //
-//         // This works for code too, not just values: Most code changes can be
-//         // tested with just a hot reload.
-//         colorScheme: .fromSeed(seedColor: Colors.deepPurple),
-//       ),
-//       home: const MyHomePage(title: 'Flutter Demo Home Page'),
-//     );
-//   }
-// }
+  @override
+  Widget build(BuildContext context) {
+    return const MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: EnergyGridScreen(),
+    );
+  }
+}
 
-// class MyHomePage extends StatefulWidget {
-//   const MyHomePage({super.key, required this.title});
+// ================= SCREEN =================
 
-//   // This widget is the home page of your application. It is stateful, meaning
-//   // that it has a State object (defined below) that contains fields that affect
-//   // how it looks.
+class EnergyGridScreen extends StatelessWidget {
+  const EnergyGridScreen({super.key});
 
-//   // This class is the configuration for the state. It holds the values (in this
-//   // case the title) provided by the parent (in this case the App widget) and
-//   // used by the build method of the State. Fields in a Widget subclass are
-//   // always marked "final".
+  @override
+  Widget build(BuildContext context) {
+    final source = EnergyDataSource(_buildRows());
 
-//   final String title;
+    return Scaffold(
+      appBar: AppBar(title: const Text('Energy Report')),
+      body: Padding(
+        padding: const EdgeInsets.all(12),
+        child: SfDataGrid(
+          source: source,
+          columnWidthMode: ColumnWidthMode.fill,
+          frozenColumnsCount: 2, // 🔥 Date + Unit FIXED
+          headerRowHeight: 42,
+          rowHeight: 34,
+          gridLinesVisibility: GridLinesVisibility.both,
+          headerGridLinesVisibility: GridLinesVisibility.both,
+          columns: [
+            GridColumn(columnName: 'date', label: _header('Date'), width: 90),
+            GridColumn(columnName: 'unit', label: _header('Unit'), width: 70),
+            GridColumn(
+              columnName: 'total',
+              label: _header('Total Energy & Cost'),
+              width: 200,
+            ),
+            GridColumn(
+              columnName: 'reb',
+              label: _header('REB Energy & Cost'),
+              width: 200,
+            ),
+            GridColumn(
+              columnName: 'solar',
+              label: _header('Solar Energy & Cost'),
+              width: 200,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
-//   @override
-//   State<MyHomePage> createState() => _MyHomePageState();
-// }
+  static Widget _header(String text) {
+    return Container(
+      alignment: Alignment.center,
+      color: const Color(0xFF5E6C8A),
+      child: Text(
+        text,
+        textAlign: TextAlign.center,
+        style: const TextStyle(color: Colors.white),
+      ),
+    );
+  }
 
-// class _MyHomePageState extends State<MyHomePage> {
-//   int _counter = 0;
+  static List<EnergyRow> _buildRows() {
+    final List<EnergyRow> rows = [];
 
-//   void _incrementCounter() {
-//     setState(() {
-//       // This call to setState tells the Flutter framework that something has
-//       // changed in this State, which causes it to rerun the build method below
-//       // so that the display can reflect the updated values. If we changed
-//       // _counter without calling setState(), then the build method would not be
-//       // called again, and so nothing would appear to happen.
-//       _counter++;
-//     });
-//   }
+    for (int i = 0; i < 8; i++) {
+      rows.add(
+        EnergyRow(
+          date: '01 Dec 24',
+          unit: 'kWh',
+          total: '2000',
+          reb: '2000',
+          solar: '2000',
+          isTk: false,
+        ),
+      );
+      rows.add(
+        EnergyRow(
+          date: '',
+          unit: '৳',
+          total: '2598257/10.2',
+          reb: '2598257/10.2',
+          solar: '2598257/10.2',
+          isTk: true,
+        ),
+      );
+    }
 
-//   @override
-//   Widget build(BuildContext context) {
-//     // This method is rerun every time setState is called, for instance as done
-//     // by the _incrementCounter method above.
-//     //
-//     // The Flutter framework has been optimized to make rerunning build methods
-//     // fast, so that you can just rebuild anything that needs updating rather
-//     // than having to individually change instances of widgets.
-//     return Scaffold(
-//       appBar: AppBar(
-//         // TRY THIS: Try changing the color here to a specific color (to
-//         // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-//         // change color while the other colors stay the same.
-//         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-//         // Here we take the value from the MyHomePage object that was created by
-//         // the App.build method, and use it to set our appbar title.
-//         title: Text(widget.title),
-//       ),
-//       body: Center(
-//         // Center is a layout widget. It takes a single child and positions it
-//         // in the middle of the parent.
-//         child: Column(
-//           // Column is also a layout widget. It takes a list of children and
-//           // arranges them vertically. By default, it sizes itself to fit its
-//           // children horizontally, and tries to be as tall as its parent.
-//           //
-//           // Column has various properties to control how it sizes itself and
-//           // how it positions its children. Here we use mainAxisAlignment to
-//           // center the children vertically; the main axis here is the vertical
-//           // axis because Columns are vertical (the cross axis would be
-//           // horizontal).
-//           //
-//           // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-//           // action in the IDE, or press "p" in the console), to see the
-//           // wireframe for each widget.
-//           mainAxisAlignment: .center,
-//           children: [
-//             const Text('You have pushed the button this many times:'),
-//             Text(
-//               '$_counter',
-//               style: Theme.of(context).textTheme.headlineMedium,
-//             ),
-//           ],
-//         ),
-//       ),
-//       floatingActionButton: FloatingActionButton(
-//         onPressed: _incrementCounter,
-//         tooltip: 'Increment',
-//         child: const Icon(Icons.add),
-//       ),
-//     );
-//   }
-// }
+    return rows;
+  }
+}
+
+// ================= DATA MODEL =================
+
+class EnergyRow {
+  EnergyRow({
+    required this.date,
+    required this.unit,
+    required this.total,
+    required this.reb,
+    required this.solar,
+    required this.isTk,
+  });
+
+  final String date;
+  final String unit;
+  final String total;
+  final String reb;
+  final String solar;
+  final bool isTk;
+}
+
+// ================= DATA SOURCE =================
+
+class EnergyDataSource extends DataGridSource {
+  EnergyDataSource(List<EnergyRow> data) {
+    _rows = data.map<DataGridRow>((e) {
+      return DataGridRow(
+        cells: [
+          DataGridCell(columnName: 'date', value: e.date),
+          DataGridCell(columnName: 'unit', value: e.unit),
+          DataGridCell(columnName: 'total', value: e.total),
+          DataGridCell(columnName: 'reb', value: e.reb),
+          DataGridCell(columnName: 'solar', value: e.solar),
+        ],
+      );
+    }).toList();
+
+    _rowMeta = data;
+  }
+
+  late final List<DataGridRow> _rows;
+  late final List<EnergyRow> _rowMeta;
+
+  @override
+  List<DataGridRow> get rows => _rows;
+
+  @override
+  DataGridRowAdapter buildRow(DataGridRow row) {
+    final index = _rows.indexOf(row);
+    final meta = _rowMeta[index];
+
+    final Color bgColor = meta.isTk
+        ? const Color(0xFFE0E1FF)
+        : const Color(0xFFF2F3FF);
+
+    return DataGridRowAdapter(
+      color: bgColor,
+      cells: row.getCells().map((cell) {
+        return Container(
+          alignment: Alignment.center,
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: Text(cell.value.toString()),
+        );
+      }).toList(),
+    );
+  }
+}
