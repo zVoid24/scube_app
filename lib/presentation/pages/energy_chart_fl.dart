@@ -2,8 +2,6 @@ import 'dart:math';
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:fl_chart/fl_chart.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_application_1/data/models/chart_data_model.dart';
 
 class EnergyChartFl extends StatefulWidget {

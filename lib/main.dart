@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/presentation/pages/auto_align_cards.dart';
 import 'package:flutter_application_1/presentation/pages/auto_flow_cards.dart';
-import 'package:flutter_application_1/presentation/pages/energy_chart.dart';
 import 'package:syncfusion_flutter_datagrid/datagrid.dart';
 
 void main() {
