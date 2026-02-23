@@ -1,36 +1,32 @@
 {
-    // Editor settings
-    "editor.fontSize": 14,
-    "editor.wordWrap": "on",
-    "editor.rulers": [
-        80
-    ], // Default line length for Dart is 80 chars
-    "editor.formatOnSave": true, // Automatically formats code on save
-    "editor.codeActionsOnSave": {
-        "source.organizeImports": "explicit", // Organizes imports on save
-        "source.fixAll": "explicit" // Applies all available fixes on save
-    },
-    "files.insertFinalNewline": true,
-    // Dart/Flutter specific settings
-    "[dart]": {
-        "editor.defaultFormatter": "Dart-Code.dart-code",
-        "editor.rulers": [
-            80
-        ], // Ensures the ruler respects the Dart setting
-    },
-    "dart.lineLength": 80, // Explicitly set line length
-    "dart.previewFlutterUiGuides": true, // Shows UI guide lines in the editor
-    "dart.flutterCreateOrganization": "com.your_org", // Sets a default organization name for new projects
-    "dart.runPubGetOnPubspecChanges": "always", // Automatically runs `flutter pub get`
-    "debug.toolBarLocation": "commandCenter", // Moves the debug toolbar to the command center
-    // Files to exclude from the explorer view (e.g., generated files)
-    "files.exclude": {
-        "**/*.freezed.dart": true,
-        "**/*.g.dart": true
-    },
-    // Optional: File nesting for generated files
-    "explorer.fileNesting.enabled": true,
-    "explorer.fileNesting.patterns": {
-        "*.dart": "$(capture).freezed.dart, $(capture).g.dart"
-    }
+  // Editor settings
+  "editor.fontSize": 14,
+  "editor.wordWrap": "on",
+  "editor.rulers": [80], // Default line length for Dart is 80 chars
+  "editor.formatOnSave": true, // Automatically formats code on save
+  "editor.codeActionsOnSave": {
+    "source.organizeImports": "explicit", // Organizes imports on save
+    "source.fixAll": "explicit" // Applies all available fixes on save
+  },
+  "files.insertFinalNewline": true,
+  // Dart/Flutter specific settings
+  "[dart]": {
+    "editor.defaultFormatter": "Dart-Code.dart-code",
+    "editor.rulers": [80] // Ensures the ruler respects the Dart setting
+  },
+  "dart.lineLength": 80, // Explicitly set line length
+  "dart.previewFlutterUiGuides": true, // Shows UI guide lines in the editor
+  "dart.flutterCreateOrganization": "com.your_org", // Sets a default organization name for new projects
+  "dart.runPubGetOnPubspecChanges": "always", // Automatically runs `flutter pub get`
+  "debug.toolBarLocation": "commandCenter", // Moves the debug toolbar to the command center
+  // Files to exclude from the explorer view (e.g., generated files)
+  "files.exclude": {
+    "**/*.freezed.dart": true,
+    "**/*.g.dart": true
+  },
+  // Optional: File nesting for generated files
+  "explorer.fileNesting.enabled": true,
+  "explorer.fileNesting.patterns": {
+    "*.dart": "$(capture).freezed.dart, $(capture).g.dart"
+  }
 }
