@@ -46,6 +46,7 @@ dependencies:
   syncfusion_flutter_datagrid: ^32.2.5
   syncfusion_flutter_charts: ^32.2.5
   flutter_staggered_grid_view:
+  flutter_wall_layout: ^2.1.2
 
 dev_dependencies:
   flutter_test:

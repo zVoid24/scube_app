@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/presentation/pages/auto_flow_cards.dart';
+import 'package:flutter_application_1/presentation/pages/pie_dashboard_screen.dart';
 import 'package:syncfusion_flutter_datagrid/datagrid.dart';
 
 void main() {
@@ -13,7 +14,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return const MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: AutoFlowCards(),
+      home: PieDashboardScreen(),
     );
   }
 }

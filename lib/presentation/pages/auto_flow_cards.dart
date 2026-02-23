@@ -16,12 +16,15 @@ class AutoFlowCards extends StatelessWidget {
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: MasonryGridView.extent(
-          maxCrossAxisExtent: 300, // 🔥 auto column calculation
+          maxCrossAxisExtent: 380, // 🔥 auto column calculation
           mainAxisSpacing: 16,
           crossAxisSpacing: 16,
           itemCount: cardsData.length,
           itemBuilder: (context, index) {
-            return DynamicCard(data: cardsData[index]);
+            if(index%2==0){
+              return DynamicCard(data: cardsData[index],width: 150.0,);
+            }
+            return DynamicCard(data: cardsData[index],width: 200.0,);
           },
         ),
       ),
@@ -85,17 +88,19 @@ List<Map<String, dynamic>> _mockJsonData() {
 ------------------------------------------------------- */
 class DynamicCard extends StatelessWidget {
   final Map<String, dynamic> data;
+  final double width;
 
-  const DynamicCard({super.key, required this.data});
+  const DynamicCard({super.key, required this.data,required this.width});
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey.shade300),
-      ),
+    return Container(
+      width: width,
+      // elevation: 0,
+      // shape: RoundedRectangleBorder(
+      //   borderRadius: BorderRadius.circular(12),
+      //   side: BorderSide(color: Colors.grey.shade300),
+      // ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
