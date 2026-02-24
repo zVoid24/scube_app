@@ -14,9 +14,9 @@ class EnergyReportExactScreen extends StatelessWidget {
       'tk': ['2598257/10.2', '2598257/10.2', '2598257/10.2'],
     };
   });
-  Color tableBlue = Color(0xFFEEF3FF); // main zebra blue
-  Color tableWhite = Colors.white; // white column
-  Color totalBlue = Color(0xFFE3EBFF); // total row
+  final Color tableBlue = Color(0xFFEEF3FF); // main zebra blue
+  final Color tableWhite = Colors.white; // white column
+  final Color totalBlue = Color(0xFFE3EBFF); // total row
 
   @override
   Widget build(BuildContext context) {
@@ -43,23 +43,6 @@ class EnergyReportExactScreen extends StatelessWidget {
   }
 
   // ================= FIXED PART =================
-  Widget _edgeShadow() {
-    return IgnorePointer(
-      child: Container(
-        width: 10,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.centerLeft,
-            end: Alignment.centerRight,
-            colors: [
-              Colors.black.withOpacity(0.18),
-              Colors.black.withOpacity(0.0),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 
   Widget _fixedPart() {
     return SizedBox(
@@ -284,17 +267,6 @@ class EnergyReportExactScreen extends StatelessWidget {
       border: Border.all(color: isBold ? Colors.black54 : Colors.black26),
     );
   }
-}
-
-Color _columnColor(int columnIndex, {bool isBold = false}) {
-  if (isBold) {
-    return const Color(0xFFE3EBFF); // Total row background
-  }
-
-  // Column-based zebra (Unit + scrollable)
-  return columnIndex.isEven
-      ? const Color.fromARGB(255, 217, 225, 243) // light blue
-      : Colors.white;
 }
 
 Color _rowTypeColor({required bool isTkRow, bool isBold = false}) {
