@@ -446,61 +446,135 @@ class _DashboardPageState extends State<DashboardPage> {
   /* ================== RESIZE HANDLES — all INSIDE the card ================== */
 
   Widget _resizeHandles(DashCard card) {
+    final index = cards.indexOf(card);
+
+    void moveEarlier(int offset) {
+      final newIndex = (index - offset).clamp(0, cards.length - 1);
+      if (newIndex != index) {
+        cards.removeAt(index);
+        cards.insert(newIndex, card);
+      }
+    }
+
+    void moveLater(int offset) {
+      final newIndex = (index + offset).clamp(0, cards.length - 1);
+      if (newIndex != index) {
+        cards.removeAt(index);
+        cards.insert(newIndex, card);
+      }
+    }
+
     return Stack(
       children: [
-        // Width + → right edge
+        /* ================= WIDTH ================= */
+
+        // 👉 Expand RIGHT
         if (card.w < columns)
           Positioned(
             right: 6,
             top: 0,
             bottom: 0,
-            child: Center(
-              child: _buildArrowButton(
-                icon: Icons.chevron_right,
-                onTap: () => setState(() => card.w++),
-              ),
+            child: _buildArrowButton(
+              icon: Icons.arrow_forward_ios,
+              onTap: () => setState(() => card.w++),
             ),
           ),
 
-        // Width - → left edge
-        if (card.w > 1)
+        // 👈 Expand LEFT
+        if (card.w < columns)
           Positioned(
             left: 6,
             top: 0,
             bottom: 0,
-            child: Center(
-              child: _buildArrowButton(
-                icon: Icons.chevron_left,
-                onTap: () => setState(() => card.w--),
-              ),
+            child: _buildArrowButton(
+              icon: Icons.arrow_back_ios_new,
+              onTap: () => setState(() {
+                card.w++;
+                moveEarlier(1); // anchor shifts left
+              }),
             ),
           ),
 
-        // Height + → bottom edge
+        // 👈 Collapse from RIGHT
+        if (card.w > 1)
+          Positioned(
+            right: 36,
+            top: 0,
+            bottom: 0,
+            child: _buildArrowButton(
+              icon: Icons.arrow_back_ios_new,
+              onTap: () => setState(() => card.w--),
+            ),
+          ),
+
+        // 👉 Collapse from LEFT
+        if (card.w > 1)
+          Positioned(
+            left: 36,
+            top: 0,
+            bottom: 0,
+            child: _buildArrowButton(
+              icon: Icons.arrow_forward_ios,
+              onTap: () => setState(() {
+                card.w--;
+                moveLater(1); // anchor shifts right
+              }),
+            ),
+          ),
+
+        /* ================= HEIGHT ================= */
+
+        // ⬇️ Expand DOWN
         if (card.h < 4)
           Positioned(
             bottom: 6,
             left: 0,
             right: 0,
-            child: Center(
-              child: _buildArrowButton(
-                icon: Icons.expand_more,
-                onTap: () => setState(() => card.h++),
-              ),
+            child: _buildArrowButton(
+              icon: Icons.arrow_downward,
+              onTap: () => setState(() => card.h++),
             ),
           ),
 
-        // Height - → top edge
-        if (card.h > 1)
+        // ⬆️ Expand UP
+        if (card.h < 4)
           Positioned(
             top: 6,
             left: 0,
             right: 0,
-            child: Center(
-              child: _buildArrowButton(
-                icon: Icons.expand_less,
-                onTap: () => setState(() => card.h--),
-              ),
+            child: _buildArrowButton(
+              icon: Icons.arrow_upward,
+              onTap: () => setState(() {
+                card.h++;
+                moveEarlier(columns); // anchor shifts up
+              }),
+            ),
+          ),
+
+        // ⬆️ Collapse from BOTTOM
+        if (card.h > 1)
+          Positioned(
+            bottom: 36,
+            left: 0,
+            right: 0,
+            child: _buildArrowButton(
+              icon: Icons.arrow_upward,
+              onTap: () => setState(() => card.h--),
+            ),
+          ),
+
+        // ⬇️ Collapse from TOP
+        if (card.h > 1)
+          Positioned(
+            top: 36,
+            left: 0,
+            right: 0,
+            child: _buildArrowButton(
+              icon: Icons.arrow_downward,
+              onTap: () => setState(() {
+                card.h--;
+                moveLater(columns); // anchor shifts down
+              }),
             ),
           ),
       ],
