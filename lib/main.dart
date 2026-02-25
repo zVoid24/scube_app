@@ -18,12 +18,19 @@ class MyApp extends StatelessWidget {
   }
 }
 
+// ── Data model ──────────────────────────────────────────────────────────────
+// Cards are kept in an ordered list. The grid layout is computed fresh each
+// build (same flow-pack algorithm as the original code), so every card always
+// gets a valid position and resize / reorder just works.
+
 class DashCard {
   final int id;
   int w;
   int h;
   DashCard({required this.id, this.w = 1, this.h = 1});
 }
+
+// ── Page ────────────────────────────────────────────────────────────────────
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -35,6 +42,9 @@ class DashboardPage extends StatefulWidget {
 class _DashboardPageState extends State<DashboardPage> {
   static const int columns = 3;
   static const double gap = 12;
+  // Extra empty-slot rows shown below the cards so there is always free space
+  // to drag cards into.
+  static const int extraRows = 4;
 
   int? activeId;
   int? draggingId;
@@ -43,80 +53,14 @@ class _DashboardPageState extends State<DashboardPage> {
   @override
   void initState() {
     super.initState();
-    cards = List.generate(9, (index) => DashCard(id: index));
+    cards = List.generate(9, (i) => DashCard(id: i));
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Resizable Cards'),
-        backgroundColor: Colors.blueAccent,
-        foregroundColor: Colors.white,
-      ),
-      body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final double availableWidth = constraints.maxWidth - gap * 2;
-            // cellSize is SQUARE so w=2 means 2 cells wide, h=2 means 2 cells tall.
-            // Perfectly symmetric: 1 unit of width == 1 unit of height.
-            final double cellSize =
-                (availableWidth - gap * (columns - 1)) / columns;
-
-            return Padding(
-              padding: const EdgeInsets.all(gap),
-              child: _buildGrid(cellSize),
-            );
-          },
-        ),
-      ),
-    );
-  }
-
-  Widget _buildGrid(double cellSize) {
-    final positions = _calculatePositions();
-
-    double maxGridHeight = 0;
-    for (int i = 0; i < cards.length; i++) {
-      final pos = positions[i];
-      final h = cards[i].h;
-      final bottomEdge =
-          pos.dy * (cellSize + gap) + h * cellSize + (h - 1) * gap;
-      if (bottomEdge > maxGridHeight) maxGridHeight = bottomEdge;
-    }
-
-    return SingleChildScrollView(
-      child: SizedBox(
-        height: maxGridHeight + 40,
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: List.generate(cards.length, (i) {
-            final card = cards[i];
-            final pos = positions[i];
-
-            final left = pos.dx * (cellSize + gap);
-            final top = pos.dy * (cellSize + gap);
-            final width = card.w * cellSize + (card.w - 1) * gap;
-            final height = card.h * cellSize + (card.h - 1) * gap;
-
-            return AnimatedPositioned(
-              key: ValueKey(card.id),
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeInOut,
-              left: left,
-              top: top,
-              width: width,
-              height: height,
-              child: _buildCard(i, card, cellSize),
-            );
-          }),
-        ),
-      ),
-    );
-  }
+  // ── Flow-pack layout (identical to original) ───────────────────────────
 
   List<Offset> _calculatePositions() {
-    final List<Offset> positions = List.filled(cards.length, Offset.zero);
+    final positions = List.filled(cards.length, Offset.zero);
+    // occupied[row] = set of occupied column indices
     final Map<int, Set<int>> occupied = {};
 
     bool isFree(int r, int c, int w, int h) {
@@ -155,7 +99,193 @@ class _DashboardPageState extends State<DashboardPage> {
     return positions;
   }
 
-  Widget _buildCard(int index, DashCard card, double cellSize) {
+  // Highest row used by cards (0-based)
+  int _maxRow(List<Offset> positions) {
+    int max = 0;
+    for (int i = 0; i < cards.length; i++) {
+      final bottom = positions[i].dy.toInt() + cards[i].h - 1;
+      if (bottom > max) max = bottom;
+    }
+    return max;
+  }
+
+  // ── Build ──────────────────────────────────────────────────────────────
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFE8EAF6),
+      appBar: AppBar(
+        title: const Text('Resizable Cards'),
+        backgroundColor: Colors.blueAccent,
+        foregroundColor: Colors.white,
+      ),
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            // Guard: on the very first frame the scaffold may report 0 height.
+            // Return an empty box — Flutter will call us again with real sizes.
+            if (constraints.maxWidth <= 0 || constraints.maxHeight <= 0) {
+              return const SizedBox.shrink();
+            }
+
+            final double availableWidth = constraints.maxWidth - gap * 2;
+            final double cellSize =
+                (availableWidth - gap * (columns - 1)) / columns;
+
+            // cellSize must be positive
+            if (cellSize <= 0) return const SizedBox.shrink();
+
+            return Padding(
+              padding: const EdgeInsets.all(gap),
+              child: _buildGrid(cellSize),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGrid(double cellSize) {
+    final positions = _calculatePositions();
+    final int usedRows = _maxRow(positions) + 1;
+    final int totalRows = usedRows + extraRows;
+    final double gridHeight = totalRows * cellSize + (totalRows - 1) * gap;
+
+    return SingleChildScrollView(
+      child: SizedBox(
+        // Add a little bottom padding so the last row is not clipped
+        height: gridHeight + 24,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            // ── Layer 1: empty slot boxes (background) ────────────────────
+            ..._buildEmptySlots(cellSize, totalRows, positions),
+            // ── Layer 2: cards ────────────────────────────────────────────
+            ...List.generate(cards.length, (i) {
+              final card = cards[i];
+              final pos = positions[i];
+              final left = pos.dx * (cellSize + gap);
+              final top = pos.dy * (cellSize + gap);
+              final width = card.w * cellSize + (card.w - 1) * gap;
+              final height = card.h * cellSize + (card.h - 1) * gap;
+
+              return AnimatedPositioned(
+                key: ValueKey('card_${card.id}'),
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+                left: left,
+                top: top,
+                width: width,
+                height: height,
+                child: _buildCard(i, card, cellSize, positions),
+              );
+            }),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Empty slot layer ───────────────────────────────────────────────────
+
+  List<Widget> _buildEmptySlots(
+    double cellSize,
+    int totalRows,
+    List<Offset> positions,
+  ) {
+    // Build a set of cells currently occupied by cards
+    final Set<String> occupied = {};
+    for (int i = 0; i < cards.length; i++) {
+      final pos = positions[i];
+      final card = cards[i];
+      for (int r = pos.dy.toInt(); r < pos.dy.toInt() + card.h; r++) {
+        for (int c = pos.dx.toInt(); c < pos.dx.toInt() + card.w; c++) {
+          occupied.add('$r,$c');
+        }
+      }
+    }
+
+    final slots = <Widget>[];
+    for (int r = 0; r < totalRows; r++) {
+      for (int c = 0; c < columns; c++) {
+        final left = c * (cellSize + gap);
+        final top = r * (cellSize + gap);
+        final isOccupied = occupied.contains('$r,$c');
+
+        slots.add(
+          Positioned(
+            left: left,
+            top: top,
+            width: cellSize,
+            height: cellSize,
+            child: DragTarget<int>(
+              onWillAcceptWithDetails: (details) => !isOccupied,
+              onAcceptWithDetails: (details) {
+                final fromIndex = details.data;
+                setState(() {
+                  // Move the dragged card to the front so it lands at this
+                  // position in the flow layout. We do this by moving it
+                  // earlier/later in the list so it naturally flows to the
+                  // target cell.
+                  //
+                  // Simplest approach: remove card and re-insert at a position
+                  // that makes the flow-packer place it near (c, r).
+                  // We approximate by finding which existing index "owns" the
+                  // target cell and inserting before it.
+                  final card = cards.removeAt(fromIndex);
+                  // Recalculate positions without this card
+                  final tempPositions = _calculatePositions();
+                  int insertAt = cards.length;
+                  for (int i = 0; i < cards.length; i++) {
+                    final pos = tempPositions[i];
+                    if (pos.dy > r || (pos.dy == r && pos.dx >= c)) {
+                      insertAt = i;
+                      break;
+                    }
+                  }
+                  cards.insert(insertAt, card);
+                  activeId = null;
+                });
+              },
+              builder: (context, candidateData, _) {
+                final hovering = candidateData.isNotEmpty;
+                if (isOccupied && !hovering) {
+                  // Occupied cells: invisible placeholder (card is drawn on top)
+                  return const SizedBox.shrink();
+                }
+                return AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  decoration: BoxDecoration(
+                    color: hovering
+                        ? Colors.green.withValues(alpha: 0.35)
+                        : const Color(0xFFDDE0F0),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: hovering
+                          ? Colors.green.shade400
+                          : Colors.white.withValues(alpha: 0.9),
+                      width: hovering ? 2 : 1.5,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+      }
+    }
+    return slots;
+  }
+
+  // ── Card widget ────────────────────────────────────────────────────────
+
+  Widget _buildCard(
+    int index,
+    DashCard card,
+    double cellSize,
+    List<Offset> positions,
+  ) {
     final cardWidth = card.w * cellSize + (card.w - 1) * gap;
     final cardHeight = card.h * cellSize + (card.h - 1) * gap;
 
@@ -167,9 +297,10 @@ class _DashboardPageState extends State<DashboardPage> {
           final temp = cards[from];
           cards[from] = cards[index];
           cards[index] = temp;
+          activeId = null;
         });
       },
-      builder: (context, candidateData, rejectedData) {
+      builder: (context, candidateData, _) {
         return LongPressDraggable<int>(
           data: index,
           onDragStarted: () => setState(() {
@@ -214,7 +345,7 @@ class _DashboardPageState extends State<DashboardPage> {
                   child: _cardBody(card, candidateData.isNotEmpty),
                 ),
                 if (activeId == card.id && draggingId != card.id)
-                  Positioned.fill(child: _resizeHandles(card)),
+                  Positioned.fill(child: _resizeHandles(card, index)),
               ],
             ),
           ),
@@ -222,6 +353,8 @@ class _DashboardPageState extends State<DashboardPage> {
       },
     );
   }
+
+  // ── Card body ──────────────────────────────────────────────────────────
 
   Widget _cardBody(DashCard card, bool isDropTarget) {
     return AnimatedContainer(
@@ -258,15 +391,14 @@ class _DashboardPageState extends State<DashboardPage> {
               }
               final double aspect =
                   constraints.maxWidth / constraints.maxHeight;
-              final double virtualWidth = aspect > 1 ? 300 * aspect : 300;
-              final double virtualHeight = aspect < 1 ? 300 / aspect : 300;
-
+              final double vw = aspect > 1 ? 300 * aspect : 300;
+              final double vh = aspect < 1 ? 300 / aspect : 300;
               return FittedBox(
                 fit: BoxFit.contain,
                 child: SizedBox(
-                  width: virtualWidth,
-                  height: virtualHeight,
-                  child: _buildVirtualContent(card),
+                  width: vw,
+                  height: vh,
+                  child: _buildContent(card),
                 ),
               );
             },
@@ -276,7 +408,7 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  Widget _buildVirtualContent(DashCard card) {
+  Widget _buildContent(DashCard card) {
     if (card.id % 3 == 0) {
       return Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -443,11 +575,12 @@ class _DashboardPageState extends State<DashboardPage> {
     }
   }
 
-  /* ================== RESIZE HANDLES — all INSIDE the card ================== */
+  // ── Resize handles ─────────────────────────────────────────────────────
+  // All 8 handles are ALWAYS shown (same as original code).
+  // Resizing changes w/h and then the flow-packer re-layouts automatically,
+  // pushing other cards aside just like the original.
 
-  Widget _resizeHandles(DashCard card) {
-    final index = cards.indexOf(card);
-
+  Widget _resizeHandles(DashCard card, int index) {
     void moveEarlier(int offset) {
       final newIndex = (index - offset).clamp(0, cards.length - 1);
       if (newIndex != index) {
@@ -466,142 +599,137 @@ class _DashboardPageState extends State<DashboardPage> {
 
     return Stack(
       children: [
-        /* ================= WIDTH ================= */
+        // ── WIDTH ──────────────────────────────────────────────────────────
 
-        // 👉 Expand RIGHT
+        // Expand RIGHT
         if (card.w < columns)
           Positioned(
             right: 6,
             top: 0,
             bottom: 0,
-            child: _buildArrowButton(
-              icon: Icons.arrow_forward_ios,
-              onTap: () => setState(() => card.w++),
+            child: _arrowBtn(
+              Icons.arrow_forward_ios,
+              () => setState(() => card.w++),
             ),
           ),
 
-        // 👈 Expand LEFT
+        // Expand LEFT
         if (card.w < columns)
           Positioned(
             left: 6,
             top: 0,
             bottom: 0,
-            child: _buildArrowButton(
-              icon: Icons.arrow_back_ios_new,
-              onTap: () => setState(() {
+            child: _arrowBtn(Icons.arrow_back_ios_new, () {
+              setState(() {
                 card.w++;
-                moveEarlier(1); // anchor shifts left
-              }),
+                moveEarlier(1);
+              });
+            }),
+          ),
+
+        // Collapse from RIGHT
+        if (card.w > 1)
+          Positioned(
+            right: 40,
+            top: 0,
+            bottom: 0,
+            child: _arrowBtn(
+              Icons.arrow_back_ios_new,
+              () => setState(() => card.w--),
             ),
           ),
 
-        // 👈 Collapse from RIGHT
+        // Collapse from LEFT
         if (card.w > 1)
           Positioned(
-            right: 36,
+            left: 40,
             top: 0,
             bottom: 0,
-            child: _buildArrowButton(
-              icon: Icons.arrow_back_ios_new,
-              onTap: () => setState(() => card.w--),
-            ),
-          ),
-
-        // 👉 Collapse from LEFT
-        if (card.w > 1)
-          Positioned(
-            left: 36,
-            top: 0,
-            bottom: 0,
-            child: _buildArrowButton(
-              icon: Icons.arrow_forward_ios,
-              onTap: () => setState(() {
+            child: _arrowBtn(Icons.arrow_forward_ios, () {
+              setState(() {
                 card.w--;
-                moveLater(1); // anchor shifts right
-              }),
-            ),
+                moveLater(1);
+              });
+            }),
           ),
 
-        /* ================= HEIGHT ================= */
+        // ── HEIGHT ─────────────────────────────────────────────────────────
 
-        // ⬇️ Expand DOWN
+        // Expand DOWN
         if (card.h < 4)
           Positioned(
             bottom: 6,
             left: 0,
             right: 0,
-            child: _buildArrowButton(
-              icon: Icons.arrow_downward,
-              onTap: () => setState(() => card.h++),
+            child: _arrowBtn(
+              Icons.arrow_downward,
+              () => setState(() => card.h++),
             ),
           ),
 
-        // ⬆️ Expand UP
+        // Expand UP
         if (card.h < 4)
           Positioned(
             top: 6,
             left: 0,
             right: 0,
-            child: _buildArrowButton(
-              icon: Icons.arrow_upward,
-              onTap: () => setState(() {
+            child: _arrowBtn(Icons.arrow_upward, () {
+              setState(() {
                 card.h++;
-                moveEarlier(columns); // anchor shifts up
-              }),
+                moveEarlier(columns);
+              });
+            }),
+          ),
+
+        // Collapse from BOTTOM
+        if (card.h > 1)
+          Positioned(
+            bottom: 40,
+            left: 0,
+            right: 0,
+            child: _arrowBtn(
+              Icons.arrow_upward,
+              () => setState(() => card.h--),
             ),
           ),
 
-        // ⬆️ Collapse from BOTTOM
+        // Collapse from TOP
         if (card.h > 1)
           Positioned(
-            bottom: 36,
+            top: 40,
             left: 0,
             right: 0,
-            child: _buildArrowButton(
-              icon: Icons.arrow_upward,
-              onTap: () => setState(() => card.h--),
-            ),
-          ),
-
-        // ⬇️ Collapse from TOP
-        if (card.h > 1)
-          Positioned(
-            top: 36,
-            left: 0,
-            right: 0,
-            child: _buildArrowButton(
-              icon: Icons.arrow_downward,
-              onTap: () => setState(() {
+            child: _arrowBtn(Icons.arrow_downward, () {
+              setState(() {
                 card.h--;
-                moveLater(columns); // anchor shifts down
-              }),
-            ),
+                moveLater(columns);
+              });
+            }),
           ),
       ],
     );
   }
 
-  Widget _buildArrowButton({
-    required IconData icon,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(4),
-        decoration: BoxDecoration(
-          color: Colors.orangeAccent,
-          shape: BoxShape.circle,
-          border: Border.all(color: Colors.white, width: 2),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.3),
-              blurRadius: 5,
-              offset: const Offset(0, 3),
-            ),
-          ],
+  Widget _arrowBtn(IconData icon, VoidCallback onTap) {
+    return Center(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: Colors.orangeAccent,
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white, width: 2),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.3),
+                blurRadius: 5,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: Icon(icon, color: Colors.white, size: 22),
         ),
-        child: Icon(icon, color: Colors.white, size: 22),
       ),
     );
   }
