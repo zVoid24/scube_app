@@ -27,7 +27,9 @@ class DashCard {
   final int id;
   int w;
   int h;
-  DashCard({required this.id, this.w = 1, this.h = 1});
+  final bool isBlank;
+
+  DashCard({required this.id, this.w = 1, this.h = 1, this.isBlank = false});
 }
 
 // ── Page ────────────────────────────────────────────────────────────────────
@@ -49,11 +51,17 @@ class _DashboardPageState extends State<DashboardPage> {
   int? activeId;
   int? draggingId;
   late List<DashCard> cards;
+  int _nextBlankId = 999;
 
   @override
   void initState() {
     super.initState();
+    // 9 actual cards
     cards = List.generate(9, (i) => DashCard(id: i));
+    // Pad with blank cards to allow dropping in empty spaces
+    for (int i = 0; i < extraRows * columns; i++) {
+      cards.add(DashCard(id: _nextBlankId++, isBlank: true));
+    }
   }
 
   // ── Flow-pack layout (identical to original) ───────────────────────────
@@ -170,6 +178,32 @@ class _DashboardPageState extends State<DashboardPage> {
               final width = card.w * cellSize + (card.w - 1) * gap;
               final height = card.h * cellSize + (card.h - 1) * gap;
 
+              if (card.isBlank) {
+                // Return an invisible drop target that can be swapped with real cards
+                return Positioned(
+                  key: ValueKey('card_${card.id}'),
+                  left: left,
+                  top: top,
+                  width: width,
+                  height: height,
+                  child: DragTarget<int>(
+                    onWillAcceptWithDetails: (details) => details.data != i,
+                    onAcceptWithDetails: (details) {
+                      final from = details.data;
+                      setState(() {
+                        final temp = cards[from];
+                        cards[from] = cards[i];
+                        cards[i] = temp;
+                        activeId = null;
+                      });
+                    },
+                    builder: (context, candidateData, _) {
+                      return const SizedBox.shrink(); // fully invisible
+                    },
+                  ),
+                );
+              }
+
               return AnimatedPositioned(
                 key: ValueKey('card_${card.id}'),
                 duration: const Duration(milliseconds: 300),
@@ -194,24 +228,11 @@ class _DashboardPageState extends State<DashboardPage> {
     int totalRows,
     List<Offset> positions,
   ) {
-    // Build a set of cells currently occupied by cards
-    final Set<String> occupied = {};
-    for (int i = 0; i < cards.length; i++) {
-      final pos = positions[i];
-      final card = cards[i];
-      for (int r = pos.dy.toInt(); r < pos.dy.toInt() + card.h; r++) {
-        for (int c = pos.dx.toInt(); c < pos.dx.toInt() + card.w; c++) {
-          occupied.add('$r,$c');
-        }
-      }
-    }
-
     final slots = <Widget>[];
     for (int r = 0; r < totalRows; r++) {
       for (int c = 0; c < columns; c++) {
         final left = c * (cellSize + gap);
         final top = r * (cellSize + gap);
-        final isOccupied = occupied.contains('$r,$c');
 
         slots.add(
           Positioned(
@@ -220,40 +241,37 @@ class _DashboardPageState extends State<DashboardPage> {
             width: cellSize,
             height: cellSize,
             child: DragTarget<int>(
-              onWillAcceptWithDetails: (details) => !isOccupied,
+              onWillAcceptWithDetails: (details) => true,
               onAcceptWithDetails: (details) {
                 final fromIndex = details.data;
                 setState(() {
-                  // Move the dragged card to the front so it lands at this
-                  // position in the flow layout. We do this by moving it
-                  // earlier/later in the list so it naturally flows to the
-                  // target cell.
-                  //
-                  // Simplest approach: remove card and re-insert at a position
-                  // that makes the flow-packer place it near (c, r).
-                  // We approximate by finding which existing index "owns" the
-                  // target cell and inserting before it.
                   final card = cards.removeAt(fromIndex);
-                  // Recalculate positions without this card
+
+                  // Find the target card (which should be a blank card) at the dropped r, c
                   final tempPositions = _calculatePositions();
-                  int insertAt = cards.length;
+                  int targetIndex = cards.length;
                   for (int i = 0; i < cards.length; i++) {
                     final pos = tempPositions[i];
-                    if (pos.dy > r || (pos.dy == r && pos.dx >= c)) {
-                      insertAt = i;
+                    if (pos.dy == r && pos.dx == c) {
+                      targetIndex = i;
                       break;
                     }
                   }
-                  cards.insert(insertAt, card);
+
+                  if (targetIndex < cards.length) {
+                    // Pre-existing card (most likely a blank card) at this exact slot
+                    // Let's swap the dragged card with it, inserting it exactly here
+                    cards.insert(targetIndex, card);
+                  } else {
+                    // Fallback just in case
+                    cards.insert(targetIndex, card);
+                  }
+
                   activeId = null;
                 });
               },
               builder: (context, candidateData, _) {
                 final hovering = candidateData.isNotEmpty;
-                if (isOccupied && !hovering) {
-                  // Occupied cells: invisible placeholder (card is drawn on top)
-                  return const SizedBox.shrink();
-                }
                 return AnimatedContainer(
                   duration: const Duration(milliseconds: 150),
                   decoration: BoxDecoration(
