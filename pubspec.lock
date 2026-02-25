@@ -81,6 +81,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.8"
+  draggable_resizable_container:
+    dependency: "direct main"
+    description:
+      name: draggable_resizable_container
+      sha256: f5587773ea17e7c7c204a5217a6bf7613a20c02de78bde397a1f31003279fdc0
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.0.1"
   equatable:
     dependency: transitive
     description:
