@@ -28,8 +28,15 @@ class DashCard {
   int w;
   int h;
   final bool isBlank;
+  final String cardType;
 
-  DashCard({required this.id, this.w = 1, this.h = 1, this.isBlank = false});
+  DashCard({
+    required this.id,
+    this.w = 1,
+    this.h = 1,
+    this.isBlank = false,
+    this.cardType = 'Type-01',
+  });
 }
 
 // ── Page ────────────────────────────────────────────────────────────────────
@@ -56,9 +63,16 @@ class _DashboardPageState extends State<DashboardPage> {
   @override
   void initState() {
     super.initState();
-    // 9 actual cards
-    cards = List.generate(9, (i) => DashCard(id: i));
-    // Pad with blank cards to allow dropping in empty spaces
+    // Initialize with a variety of sizes representing the different types
+    cards = [
+      DashCard(id: 0, w: 1, h: 1, cardType: 'Type-01'), // Small (1x1)
+      DashCard(id: 1, w: 1, h: 2, cardType: 'Type-02'), // Tall (1x2)
+      DashCard(id: 2, w: 1, h: 1, cardType: 'Type-05'), // Small (1x1)
+      DashCard(id: 3, w: 3, h: 2, cardType: 'Type-03'), // Wide/Large (3x2)
+      DashCard(id: 4, w: 1, h: 1, cardType: 'Type-04'), // Small (1x1)
+    ];
+
+    // Add dummy blank cards to fill out empty spaces
     for (int i = 0; i < extraRows * columns; i++) {
       cards.add(DashCard(id: _nextBlankId++, isBlank: true));
     }
@@ -378,218 +392,181 @@ class _DashboardPageState extends State<DashboardPage> {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       decoration: BoxDecoration(
-        color: isDropTarget ? Colors.green.shade400 : Colors.blue.shade500,
-        borderRadius: BorderRadius.circular(16),
+        color: isDropTarget ? Colors.blue.shade50 : Colors.white,
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: activeId == card.id ? Colors.white : Colors.transparent,
-          width: 3,
+          color: activeId == card.id ? Colors.blue : Colors.grey.shade300,
+          width: activeId == card.id ? 2 : 1,
         ),
         boxShadow: [
           if (activeId == card.id)
             BoxShadow(
-              color: Colors.blue.withValues(alpha: 0.5),
-              blurRadius: 10,
-              spreadRadius: 2,
+              color: Colors.blue.withValues(alpha: 0.2),
+              blurRadius: 8,
+              spreadRadius: 1,
             ),
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
         ],
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(13),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              if (constraints.maxWidth <= 0 || constraints.maxHeight <= 0) {
-                return const SizedBox.shrink();
-              }
-              final double aspect =
-                  constraints.maxWidth / constraints.maxHeight;
-              final double vw = aspect > 1 ? 300 * aspect : 300;
-              final double vh = aspect < 1 ? 300 / aspect : 300;
-              return FittedBox(
-                fit: BoxFit.contain,
-                child: SizedBox(
-                  width: vw,
-                  height: vh,
-                  child: _buildContent(card),
-                ),
-              );
-            },
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: Padding(
+              padding: const EdgeInsets.only(
+                top: 24.0,
+                left: 16,
+                right: 16,
+                bottom: 16,
+              ),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  if (constraints.maxWidth <= 0 || constraints.maxHeight <= 0) {
+                    return const SizedBox.shrink();
+                  }
+
+                  // Base logical sizes representing the layout shapes
+                  double baseW = 200;
+                  double baseH = 200;
+
+                  if (card.cardType == 'Type-02') {
+                    baseW = 200;
+                    baseH = 400;
+                  } else if (card.cardType == 'Type-03') {
+                    baseW = 400;
+                    baseH = 400;
+                  }
+
+                  return FittedBox(
+                    fit: BoxFit.contain,
+                    child: SizedBox(
+                      width: baseW,
+                      height: baseH,
+                      child: _buildContent(card),
+                    ),
+                  );
+                },
+              ),
+            ),
           ),
-        ),
+          // Type Tag in top right corner
+          Positioned(
+            top: 0,
+            right: 16,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade200,
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(8),
+                  bottomRight: Radius.circular(8),
+                ),
+              ),
+              child: Text(
+                card.cardType,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey.shade700,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ),
+          if (card.cardType == 'Type-03' || card.cardType == 'Type-02')
+            Positioned(
+              top: 12,
+              left: 16,
+              child: Text(
+                'Card Name',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.indigo.shade900,
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
 
+  Widget _buildDataBlock({double labelSize = 24, double valueSize = 36}) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          'Data Name',
+          style: TextStyle(
+            fontSize: labelSize,
+            color: Colors.grey.shade500,
+            fontWeight: FontWeight.w600,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        SizedBox(height: labelSize * 0.5),
+        Text(
+          '000 / Value',
+          style: TextStyle(
+            fontSize: valueSize,
+            color: Colors.indigo.shade900,
+            fontWeight: FontWeight.bold,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+  }
+
   Widget _buildContent(DashCard card) {
-    if (card.id % 3 == 0) {
+    if (card.cardType == 'Type-02') {
       return Column(
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.analytics_outlined, color: Colors.white, size: 80),
-          const SizedBox(height: 16),
-          Text(
-            'Analytics ${card.id}',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 32,
-              fontWeight: FontWeight.bold,
+          Expanded(child: _buildDataBlock(labelSize: 24, valueSize: 36)),
+          Divider(color: Colors.grey.shade300, height: 1, thickness: 2),
+          Expanded(child: _buildDataBlock(labelSize: 24, valueSize: 36)),
+          Divider(color: Colors.grey.shade300, height: 1, thickness: 2),
+          Expanded(child: _buildDataBlock(labelSize: 24, valueSize: 36)),
+        ],
+      );
+    } else if (card.cardType == 'Type-03') {
+      return Column(
+        children: [
+          Expanded(
+            child: Row(
+              children: [
+                Expanded(child: _buildDataBlock(labelSize: 24, valueSize: 36)),
+                Container(width: 2, color: Colors.grey.shade200),
+                Expanded(child: _buildDataBlock(labelSize: 24, valueSize: 36)),
+              ],
             ),
           ),
-          const SizedBox(height: 8),
-          const Text(
-            'This content resizes dynamically!',
-            style: TextStyle(color: Colors.white70, fontSize: 18),
-            textAlign: TextAlign.center,
+          Divider(color: Colors.grey.shade300, height: 1, thickness: 2),
+          Expanded(
+            child: Row(
+              children: [
+                Expanded(child: _buildDataBlock(labelSize: 24, valueSize: 36)),
+                Container(width: 2, color: Colors.grey.shade200),
+                Expanded(child: _buildDataBlock(labelSize: 24, valueSize: 36)),
+              ],
+            ),
           ),
         ],
       );
-    } else if (card.id % 3 == 1) {
-      return Row(
-        mainAxisAlignment: MainAxisAlignment.center,
+    } else if (card.cardType == 'Type-05') {
+      // Small 1x1 but packed with two stacked values
+      return Column(
         children: [
-          SizedBox(
-            width: 120,
-            height: 120,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                CircularProgressIndicator(
-                  value: 0.75,
-                  strokeWidth: 16,
-                  backgroundColor: Colors.white.withValues(alpha: 0.2),
-                  valueColor: const AlwaysStoppedAnimation(Colors.white),
-                ),
-                const Center(
-                  child: Text(
-                    '75%',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 28,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 32),
-          const Flexible(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Storage',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                SizedBox(height: 8),
-                Text(
-                  '150 GB / 200 GB Used',
-                  style: TextStyle(color: Colors.white70, fontSize: 16),
-                ),
-              ],
-            ),
-          ),
+          Expanded(child: _buildDataBlock(labelSize: 20, valueSize: 28)),
+          Divider(color: Colors.grey.shade300, height: 1, thickness: 2),
+          Expanded(child: _buildDataBlock(labelSize: 20, valueSize: 28)),
         ],
       );
     } else {
-      return Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Text(
-            'Recent Logs',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Table(
-            border: TableBorder.all(color: Colors.white30, width: 2),
-            children: [
-              TableRow(
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.1),
-                ),
-                children: const [
-                  Padding(
-                    padding: EdgeInsets.all(12),
-                    child: Text(
-                      'Service',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: EdgeInsets.all(12),
-                    child: Text(
-                      'Status',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const TableRow(
-                children: [
-                  Padding(
-                    padding: EdgeInsets.all(12),
-                    child: Text(
-                      'Auth API',
-                      style: TextStyle(color: Colors.white70, fontSize: 18),
-                    ),
-                  ),
-                  Padding(
-                    padding: EdgeInsets.all(12),
-                    child: Text(
-                      'OK',
-                      style: TextStyle(color: Colors.greenAccent, fontSize: 18),
-                    ),
-                  ),
-                ],
-              ),
-              const TableRow(
-                children: [
-                  Padding(
-                    padding: EdgeInsets.all(12),
-                    child: Text(
-                      'Database',
-                      style: TextStyle(color: Colors.white70, fontSize: 18),
-                    ),
-                  ),
-                  Padding(
-                    padding: EdgeInsets.all(12),
-                    child: Text(
-                      'Syncing',
-                      style: TextStyle(
-                        color: Colors.orangeAccent,
-                        fontSize: 18,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ],
-      );
+      // Type-01, Type-04, etc.
+      return _buildDataBlock(labelSize: 24, valueSize: 36);
     }
   }
 
