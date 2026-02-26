@@ -98,43 +98,86 @@ class _DashboardPageState extends State<DashboardPage> {
     }
 
     final positions = List.filled(layoutCards.length, Offset.zero);
-    // occupied[row] = set of occupied column indices
-    final Map<int, Set<int>> occupied = {};
 
-    bool isFree(int r, int c, int w, int h) {
-      if (c + w > columns) return false;
+    // ── Sequential row-flow layout ──────────────────────────────────────────
+    // Works exactly like CSS flex-wrap: wrap.
+    // Cards are placed strictly in list order, left-to-right.
+    // When a card doesn't fit in the remaining columns of the current row
+    // the cursor moves to the start of the next row.
+    // Gaps left by tall cards are NEVER backfilled — the order you set is
+    // exactly the order you see.
+
+    // For each row, track the highest "floor" column index that is blocked
+    // by a tall card placed in a previous row.
+    // blocked[row] = list of (startCol, endCol exclusive) spans that are occupied.
+    final Map<int, List<(int, int)>> blocked = {};
+
+    void markBlocked(int r, int c, int w, int h) {
       for (int i = r; i < r + h; i++) {
-        for (int j = c; j < c + w; j++) {
-          if (occupied[i]?.contains(j) ?? false) return false;
-        }
+        blocked.putIfAbsent(i, () => []);
+        blocked[i]!.add((c, c + w));
       }
-      return true;
     }
 
-    void place(int r, int c, int w, int h) {
-      for (int i = r; i < r + h; i++) {
-        occupied.putIfAbsent(i, () => {});
-        for (int j = c; j < c + w; j++) {
-          occupied[i]!.add(j);
-        }
-      }
-    }
-
-    for (int i = 0; i < layoutCards.length; i++) {
-      final card = layoutCards[i];
-      bool placed = false;
-      for (int r = 0; !placed; r++) {
-        for (int c = 0; c <= columns - card.w; c++) {
-          if (isFree(r, c, card.w, card.h)) {
-            int origIndex = cards.indexOf(card);
-            positions[origIndex] = Offset(c.toDouble(), r.toDouble());
-            place(r, c, card.w, card.h);
-            placed = true;
+    // Returns the first column on row `r` that is free for a card of width `w`,
+    // starting the search from column `startCol`.
+    // Returns -1 if no such column exists on this row.
+    int firstFreeCol(int r, int startCol, int w) {
+      int c = startCol;
+      while (c + w <= columns) {
+        bool fits = true;
+        final spans = blocked[r] ?? [];
+        for (final (s, e) in spans) {
+          if (c < e && c + w > s) {
+            // Overlap: skip past this span.
+            c = e;
+            fits = false;
             break;
           }
         }
+        if (fits) return c;
+      }
+      return -1;
+    }
+
+    int cursorRow = 0;
+    int cursorCol = 0;
+
+    for (int i = 0; i < layoutCards.length; i++) {
+      final card = layoutCards[i];
+
+      // Try to place at the cursor, or advance rightward if blocked.
+      int col = firstFreeCol(cursorRow, cursorCol, card.w);
+
+      if (col == -1) {
+        // Doesn't fit on this row — move to the next row.
+        cursorRow++;
+        cursorCol = 0;
+        col = firstFreeCol(cursorRow, cursorCol, card.w);
+
+        // Keep advancing rows until we find a fit (handles very wide blockers).
+        while (col == -1) {
+          cursorRow++;
+          col = firstFreeCol(cursorRow, 0, card.w);
+        }
+        cursorCol = 0;
+      }
+
+      // Place the card.
+      final origIndex = cards.indexOf(card);
+      positions[origIndex] = Offset(col.toDouble(), cursorRow.toDouble());
+      markBlocked(cursorRow, col, card.w, card.h);
+
+      // Advance cursor to the column just after this card.
+      cursorCol = col + card.w;
+
+      // If the cursor is at or past the end of the row, wrap to next row.
+      if (cursorCol >= columns) {
+        cursorRow++;
+        cursorCol = 0;
       }
     }
+
     return positions;
   }
 
