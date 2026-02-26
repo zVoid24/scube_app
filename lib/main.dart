@@ -57,6 +57,9 @@ class _DashboardPageState extends State<DashboardPage> {
 
   int? activeId;
   int? draggingId;
+  int? draggingListIndex;
+  int? dragHoverListIndex;
+
   late List<DashCard> cards;
   int _nextBlankId = 999;
 
@@ -80,8 +83,21 @@ class _DashboardPageState extends State<DashboardPage> {
 
   // ── Flow-pack layout (identical to original) ───────────────────────────
 
-  List<Offset> _calculatePositions() {
-    final positions = List.filled(cards.length, Offset.zero);
+  List<Offset> _calculatePositions({bool applyDragReflow = false}) {
+    List<DashCard> layoutCards = List.from(cards);
+
+    if (applyDragReflow &&
+        draggingListIndex != null &&
+        dragHoverListIndex != null) {
+      if (draggingListIndex != dragHoverListIndex) {
+        final card = layoutCards.removeAt(draggingListIndex!);
+        int insertIndex = dragHoverListIndex!;
+        if (insertIndex > layoutCards.length) insertIndex = layoutCards.length;
+        layoutCards.insert(insertIndex, card);
+      }
+    }
+
+    final positions = List.filled(layoutCards.length, Offset.zero);
     // occupied[row] = set of occupied column indices
     final Map<int, Set<int>> occupied = {};
 
@@ -104,13 +120,14 @@ class _DashboardPageState extends State<DashboardPage> {
       }
     }
 
-    for (int i = 0; i < cards.length; i++) {
-      final card = cards[i];
+    for (int i = 0; i < layoutCards.length; i++) {
+      final card = layoutCards[i];
       bool placed = false;
       for (int r = 0; !placed; r++) {
         for (int c = 0; c <= columns - card.w; c++) {
           if (isFree(r, c, card.w, card.h)) {
-            positions[i] = Offset(c.toDouble(), r.toDouble());
+            int origIndex = cards.indexOf(card);
+            positions[origIndex] = Offset(c.toDouble(), r.toDouble());
             place(r, c, card.w, card.h);
             placed = true;
             break;
@@ -169,7 +186,8 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Widget _buildGrid(double cellSize) {
-    final positions = _calculatePositions();
+    final positions = _calculatePositions(applyDragReflow: true);
+    final basePositions = _calculatePositions(applyDragReflow: false);
     final int usedRows = _maxRow(positions) + 1;
     final int totalRows = usedRows + extraRows;
     final double gridHeight = totalRows * cellSize + (totalRows - 1) * gap;
@@ -193,28 +211,13 @@ class _DashboardPageState extends State<DashboardPage> {
               final height = card.h * cellSize + (card.h - 1) * gap;
 
               if (card.isBlank) {
-                // Return an invisible drop target that can be swapped with real cards
                 return Positioned(
                   key: ValueKey('card_${card.id}'),
                   left: left,
                   top: top,
                   width: width,
                   height: height,
-                  child: DragTarget<int>(
-                    onWillAcceptWithDetails: (details) => details.data != i,
-                    onAcceptWithDetails: (details) {
-                      final from = details.data;
-                      setState(() {
-                        final temp = cards[from];
-                        cards[from] = cards[i];
-                        cards[i] = temp;
-                        activeId = null;
-                      });
-                    },
-                    builder: (context, candidateData, _) {
-                      return const SizedBox.shrink(); // fully invisible
-                    },
-                  ),
+                  child: const SizedBox.shrink(),
                 );
               }
 
@@ -229,6 +232,59 @@ class _DashboardPageState extends State<DashboardPage> {
                 child: _buildCard(i, card, cellSize, positions),
               );
             }),
+            // ── Layer 3: Invisible drag target grid overlay ──────────
+            if (draggingId != null)
+              ...List.generate(totalRows * columns, (index) {
+                final r = index ~/ columns;
+                final c = index % columns;
+                final left = c * (cellSize + gap);
+                final top = r * (cellSize + gap);
+                return Positioned(
+                  left: left,
+                  top: top,
+                  width: cellSize,
+                  height: cellSize,
+                  child: DragTarget<int>(
+                    onWillAcceptWithDetails: (details) {
+                      int targetIndex = cards.length;
+                      for (int i = 0; i < cards.length; i++) {
+                        final card = cards[i];
+                        final pos = basePositions[i];
+                        if (r >= pos.dy &&
+                            r < pos.dy + card.h &&
+                            c >= pos.dx &&
+                            c < pos.dx + card.w) {
+                          targetIndex = i;
+                          break;
+                        }
+                      }
+                      if (dragHoverListIndex != targetIndex) {
+                        setState(() => dragHoverListIndex = targetIndex);
+                      }
+                      return true;
+                    },
+                    onAcceptWithDetails: (details) {
+                      final fromIndex = details.data;
+                      setState(() {
+                        final card = cards.removeAt(fromIndex);
+                        int targetIndex = dragHoverListIndex ?? cards.length;
+                        if (targetIndex > cards.length) {
+                          targetIndex = cards.length;
+                        }
+                        cards.insert(targetIndex, card);
+
+                        activeId = null;
+                        draggingListIndex = null;
+                        dragHoverListIndex = null;
+                        draggingId = null;
+                      });
+                    },
+                    builder: (context, candidateData, _) {
+                      return const SizedBox.shrink();
+                    },
+                  ),
+                );
+              }),
           ],
         ),
       ),
@@ -254,50 +310,16 @@ class _DashboardPageState extends State<DashboardPage> {
             top: top,
             width: cellSize,
             height: cellSize,
-            child: DragTarget<int>(
-              onWillAcceptWithDetails: (details) => true,
-              onAcceptWithDetails: (details) {
-                final fromIndex = details.data;
-                setState(() {
-                  final card = cards.removeAt(fromIndex);
-
-                  // Find the target card (which should be a blank card) at the dropped r, c
-                  final tempPositions = _calculatePositions();
-                  int targetIndex = cards.length;
-                  for (int i = 0; i < cards.length; i++) {
-                    final pos = tempPositions[i];
-                    if (pos.dy == r && pos.dx == c) {
-                      targetIndex = i;
-                      break;
-                    }
-                  }
-
-                  if (targetIndex < cards.length) {
-                    // Pre-existing card (most likely a blank card) at this exact slot
-                    // Let's swap the dragged card with it, inserting it exactly here
-                    cards.insert(targetIndex, card);
-                  } else {
-                    // Fallback just in case
-                    cards.insert(targetIndex, card);
-                  }
-
-                  activeId = null;
-                });
-              },
-              builder: (context, candidateData, _) {
-                final hovering = candidateData.isNotEmpty;
+            child: Builder(
+              builder: (context) {
                 return AnimatedContainer(
                   duration: const Duration(milliseconds: 150),
                   decoration: BoxDecoration(
-                    color: hovering
-                        ? Colors.green.withValues(alpha: 0.35)
-                        : const Color(0xFFDDE0F0),
+                    color: const Color(0xFFDDE0F0),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: hovering
-                          ? Colors.green.shade400
-                          : Colors.white.withValues(alpha: 0.9),
-                      width: hovering ? 2 : 1.5,
+                      color: Colors.white.withValues(alpha: 0.9),
+                      width: 1.5,
                     ),
                   ),
                 );
@@ -321,25 +343,26 @@ class _DashboardPageState extends State<DashboardPage> {
     final cardWidth = card.w * cellSize + (card.w - 1) * gap;
     final cardHeight = card.h * cellSize + (card.h - 1) * gap;
 
-    return DragTarget<int>(
-      onWillAcceptWithDetails: (details) => details.data != index,
-      onAcceptWithDetails: (details) {
-        final from = details.data;
-        setState(() {
-          final temp = cards[from];
-          cards[from] = cards[index];
-          cards[index] = temp;
-          activeId = null;
-        });
-      },
-      builder: (context, candidateData, _) {
+    return Builder(
+      builder: (context) {
         return LongPressDraggable<int>(
           data: index,
           onDragStarted: () => setState(() {
             draggingId = card.id;
+            draggingListIndex = index;
+            dragHoverListIndex = index;
             activeId = null;
           }),
-          onDragEnd: (_) => setState(() => draggingId = null),
+          onDragEnd: (_) => setState(() {
+            draggingId = null;
+            draggingListIndex = null;
+            dragHoverListIndex = null;
+          }),
+          onDraggableCanceled: (_, _) => setState(() {
+            draggingId = null;
+            draggingListIndex = null;
+            dragHoverListIndex = null;
+          }),
           feedback: Material(
             elevation: 12,
             color: Colors.transparent,
@@ -366,19 +389,22 @@ class _DashboardPageState extends State<DashboardPage> {
             opacity: 0.3,
             child: _cardBody(card, false),
           ),
-          child: GestureDetector(
-            onTap: () => setState(() {
-              activeId = activeId == card.id ? null : card.id;
-            }),
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Positioned.fill(
-                  child: _cardBody(card, candidateData.isNotEmpty),
-                ),
-                if (activeId == card.id && draggingId != card.id)
-                  Positioned.fill(child: _resizeHandles(card, index)),
-              ],
+          child: IgnorePointer(
+            ignoring: draggingId != null,
+            child: GestureDetector(
+              onTap: () => setState(() {
+                activeId = activeId == card.id ? null : card.id;
+              }),
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Positioned.fill(
+                    child: _cardBody(card, dragHoverListIndex == index),
+                  ),
+                  if (activeId == card.id && draggingId != card.id)
+                    Positioned.fill(child: _resizeHandles(card, index)),
+                ],
+              ),
             ),
           ),
         );
