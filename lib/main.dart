@@ -27,14 +27,12 @@ class DashCard {
   final int id;
   int w;
   int h;
-  final bool isBlank;
   final String cardType;
 
   DashCard({
     required this.id,
     this.w = 1,
     this.h = 1,
-    this.isBlank = false,
     this.cardType = 'Type-01',
   });
 }
@@ -51,9 +49,6 @@ class DashboardPage extends StatefulWidget {
 class _DashboardPageState extends State<DashboardPage> {
   static const int columns = 3;
   static const double gap = 12;
-  // Extra empty-slot rows shown below the cards so there is always free space
-  // to drag cards into.
-  static const int extraRows = 4;
 
   int? activeId;
   int? draggingId;
@@ -61,7 +56,6 @@ class _DashboardPageState extends State<DashboardPage> {
   int? dragHoverListIndex;
 
   late List<DashCard> cards;
-  int _nextBlankId = 999;
 
   @override
   void initState() {
@@ -74,30 +68,12 @@ class _DashboardPageState extends State<DashboardPage> {
       DashCard(id: 3, w: 3, h: 2, cardType: 'Type-03'), // Wide/Large (3x2)
       DashCard(id: 4, w: 1, h: 1, cardType: 'Type-04'), // Small (1x1)
     ];
-
-    // Add dummy blank cards to fill out empty spaces
-    for (int i = 0; i < extraRows * columns; i++) {
-      cards.add(DashCard(id: _nextBlankId++, isBlank: true));
-    }
   }
 
-  // ── Flow-pack layout (identical to original) ───────────────────────────
+  // ── Flow-pack layout ───────────────────────────────────────────────────
 
-  List<Offset> _calculatePositions({bool applyDragReflow = false}) {
-    List<DashCard> layoutCards = List.from(cards);
-
-    if (applyDragReflow &&
-        draggingListIndex != null &&
-        dragHoverListIndex != null) {
-      if (draggingListIndex != dragHoverListIndex) {
-        final card = layoutCards.removeAt(draggingListIndex!);
-        int insertIndex = dragHoverListIndex!;
-        if (insertIndex > layoutCards.length) insertIndex = layoutCards.length;
-        layoutCards.insert(insertIndex, card);
-      }
-    }
-
-    final positions = List.filled(layoutCards.length, Offset.zero);
+  List<Offset> _calculatePositions() {
+    final positions = List.filled(cards.length, Offset.zero);
 
     // ── Sequential row-flow layout ──────────────────────────────────────────
     // Works exactly like CSS flex-wrap: wrap.
@@ -143,8 +119,8 @@ class _DashboardPageState extends State<DashboardPage> {
     int cursorRow = 0;
     int cursorCol = 0;
 
-    for (int i = 0; i < layoutCards.length; i++) {
-      final card = layoutCards[i];
+    for (int i = 0; i < cards.length; i++) {
+      final card = cards[i];
 
       // Try to place at the cursor, or advance rightward if blocked.
       int col = firstFreeCol(cursorRow, cursorCol, card.w);
@@ -164,8 +140,7 @@ class _DashboardPageState extends State<DashboardPage> {
       }
 
       // Place the card.
-      final origIndex = cards.indexOf(card);
-      positions[origIndex] = Offset(col.toDouble(), cursorRow.toDouble());
+      positions[i] = Offset(col.toDouble(), cursorRow.toDouble());
       markBlocked(cursorRow, col, card.w, card.h);
 
       // Advance cursor to the column just after this card.
@@ -229,11 +204,9 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Widget _buildGrid(double cellSize) {
-    final positions = _calculatePositions(applyDragReflow: true);
-    final basePositions = _calculatePositions(applyDragReflow: false);
+    final positions = _calculatePositions();
     final int usedRows = _maxRow(positions) + 1;
-    final int totalRows = usedRows + extraRows;
-    final double gridHeight = totalRows * cellSize + (totalRows - 1) * gap;
+    final double gridHeight = usedRows * cellSize + (usedRows - 1) * gap;
 
     return SingleChildScrollView(
       child: SizedBox(
@@ -242,9 +215,6 @@ class _DashboardPageState extends State<DashboardPage> {
         child: Stack(
           clipBehavior: Clip.none,
           children: [
-            // ── Layer 1: empty slot boxes (background) ────────────────────
-            ..._buildEmptySlots(cellSize, totalRows, positions),
-            // ── Layer 2: cards ────────────────────────────────────────────
             ...List.generate(cards.length, (i) {
               final card = cards[i];
               final pos = positions[i];
@@ -252,17 +222,6 @@ class _DashboardPageState extends State<DashboardPage> {
               final top = pos.dy * (cellSize + gap);
               final width = card.w * cellSize + (card.w - 1) * gap;
               final height = card.h * cellSize + (card.h - 1) * gap;
-
-              if (card.isBlank) {
-                return Positioned(
-                  key: ValueKey('card_${card.id}'),
-                  left: left,
-                  top: top,
-                  width: width,
-                  height: height,
-                  child: const SizedBox.shrink(),
-                );
-              }
 
               return AnimatedPositioned(
                 key: ValueKey('card_${card.id}'),
@@ -275,107 +234,11 @@ class _DashboardPageState extends State<DashboardPage> {
                 child: _buildCard(i, card, cellSize, positions),
               );
             }),
-            // ── Layer 3: Invisible drag target grid overlay ──────────
-            if (draggingId != null)
-              ...List.generate(totalRows * columns, (index) {
-                final r = index ~/ columns;
-                final c = index % columns;
-                final left = c * (cellSize + gap);
-                final top = r * (cellSize + gap);
-                return Positioned(
-                  left: left,
-                  top: top,
-                  width: cellSize,
-                  height: cellSize,
-                  child: DragTarget<int>(
-                    onWillAcceptWithDetails: (details) {
-                      int targetIndex = cards.length;
-                      for (int i = 0; i < cards.length; i++) {
-                        final card = cards[i];
-                        final pos = basePositions[i];
-                        if (r >= pos.dy &&
-                            r < pos.dy + card.h &&
-                            c >= pos.dx &&
-                            c < pos.dx + card.w) {
-                          targetIndex = i;
-                          break;
-                        }
-                      }
-                      if (dragHoverListIndex != targetIndex) {
-                        setState(() => dragHoverListIndex = targetIndex);
-                      }
-                      return true;
-                    },
-                    onAcceptWithDetails: (details) {
-                      final fromIndex = details.data;
-                      setState(() {
-                        final card = cards.removeAt(fromIndex);
-                        int targetIndex = dragHoverListIndex ?? cards.length;
-                        if (targetIndex > cards.length) {
-                          targetIndex = cards.length;
-                        }
-                        cards.insert(targetIndex, card);
-
-                        activeId = null;
-                        draggingListIndex = null;
-                        dragHoverListIndex = null;
-                        draggingId = null;
-                      });
-                    },
-                    builder: (context, candidateData, _) {
-                      return const SizedBox.shrink();
-                    },
-                  ),
-                );
-              }),
           ],
         ),
       ),
     );
   }
-
-  // ── Empty slot layer ───────────────────────────────────────────────────
-
-  List<Widget> _buildEmptySlots(
-    double cellSize,
-    int totalRows,
-    List<Offset> positions,
-  ) {
-    final slots = <Widget>[];
-    for (int r = 0; r < totalRows; r++) {
-      for (int c = 0; c < columns; c++) {
-        final left = c * (cellSize + gap);
-        final top = r * (cellSize + gap);
-
-        slots.add(
-          Positioned(
-            left: left,
-            top: top,
-            width: cellSize,
-            height: cellSize,
-            child: Builder(
-              builder: (context) {
-                return AnimatedContainer(
-                  duration: const Duration(milliseconds: 150),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFDDE0F0),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.9),
-                      width: 1.5,
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-        );
-      }
-    }
-    return slots;
-  }
-
-  // ── Card widget ────────────────────────────────────────────────────────
 
   Widget _buildCard(
     int index,
@@ -388,68 +251,94 @@ class _DashboardPageState extends State<DashboardPage> {
 
     return Builder(
       builder: (context) {
-        return LongPressDraggable<int>(
-          data: index,
-          onDragStarted: () => setState(() {
-            draggingId = card.id;
-            draggingListIndex = index;
-            dragHoverListIndex = index;
-            activeId = null;
-          }),
-          onDragEnd: (_) => setState(() {
-            draggingId = null;
-            draggingListIndex = null;
-            dragHoverListIndex = null;
-          }),
-          onDraggableCanceled: (_, _) => setState(() {
-            draggingId = null;
-            draggingListIndex = null;
-            dragHoverListIndex = null;
-          }),
-          feedback: Material(
-            elevation: 12,
-            color: Colors.transparent,
-            child: Container(
-              width: cardWidth,
-              height: cardHeight,
-              decoration: BoxDecoration(
-                color: Colors.blueAccent.withValues(alpha: 0.9),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.white, width: 2),
-              ),
-              alignment: Alignment.center,
-              child: Text(
-                'Card ${card.id}',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
+        return DragTarget<int>(
+          onWillAcceptWithDetails: (details) {
+            if (dragHoverListIndex != index) {
+              setState(() => dragHoverListIndex = index);
+            }
+            return details.data != index;
+          },
+          onAcceptWithDetails: (details) {
+            final fromIndex = details.data;
+            setState(() {
+              // Direct swap
+              final temp = cards[fromIndex];
+              cards[fromIndex] = cards[index];
+              cards[index] = temp;
+
+              activeId = null;
+              draggingListIndex = null;
+              dragHoverListIndex = null;
+              draggingId = null;
+            });
+          },
+          onLeave: (_) {
+            setState(() => dragHoverListIndex = null);
+          },
+          builder: (context, candidateData, rejectedData) {
+            return LongPressDraggable<int>(
+              data: index,
+              onDragStarted: () => setState(() {
+                draggingId = card.id;
+                draggingListIndex = index;
+                activeId = null;
+              }),
+              onDragEnd: (_) => setState(() {
+                draggingId = null;
+                draggingListIndex = null;
+                dragHoverListIndex = null;
+              }),
+              onDraggableCanceled: (_, _) => setState(() {
+                draggingId = null;
+                draggingListIndex = null;
+                dragHoverListIndex = null;
+              }),
+              feedback: Material(
+                elevation: 12,
+                color: Colors.transparent,
+                child: Container(
+                  width: cardWidth,
+                  height: cardHeight,
+                  decoration: BoxDecoration(
+                    color: Colors.blueAccent.withValues(alpha: 0.9),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.white, width: 2),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    'Card ${card.id}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ),
-            ),
-          ),
-          childWhenDragging: Opacity(
-            opacity: 0.3,
-            child: _cardBody(card, false),
-          ),
-          child: IgnorePointer(
-            ignoring: draggingId != null,
-            child: GestureDetector(
-              onTap: () => setState(() {
-                activeId = activeId == card.id ? null : card.id;
-              }),
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Positioned.fill(
-                    child: _cardBody(card, dragHoverListIndex == index),
-                  ),
-                  if (activeId == card.id && draggingId != card.id)
-                    Positioned.fill(child: _resizeHandles(card, index)),
-                ],
+              childWhenDragging: Opacity(
+                opacity: 0.3,
+                child: _cardBody(card, false),
               ),
-            ),
-          ),
+              child: IgnorePointer(
+                ignoring: draggingId != null,
+                child: GestureDetector(
+                  onTap: () => setState(() {
+                    activeId = activeId == card.id ? null : card.id;
+                  }),
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Positioned.fill(
+                        child: _cardBody(card, dragHoverListIndex == index),
+                      ),
+                      if (activeId == card.id && draggingId != card.id)
+                        Positioned.fill(child: _resizeHandles(card, index)),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
         );
       },
     );
