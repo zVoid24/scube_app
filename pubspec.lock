@@ -5,10 +5,10 @@ packages:
     dependency: transitive
     description:
       name: archive
-      sha256: "2fde1607386ab523f7a36bb3e7edb43bd58e6edaf2ffb29d8a6d578b297fdbbd"
+      sha256: a96e8b390886ee8abb49b7bd3ac8df6f451c621619f52a26e815fdcf568959ff
       url: "https://pub.dev"
     source: hosted
-    version: "4.0.7"
+    version: "4.0.9"
   async:
     dependency: transitive
     description:
@@ -81,14 +81,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.8"
-  draggable_resizable_container:
-    dependency: "direct main"
-    description:
-      name: draggable_resizable_container
-      sha256: f5587773ea17e7c7c204a5217a6bf7613a20c02de78bde397a1f31003279fdc0
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.0.1"
   equatable:
     dependency: transitive
     description:
@@ -125,23 +117,15 @@ packages:
     dependency: "direct main"
     description:
       name: fl_chart
-      sha256: "7ca9a40f4eb85949190e54087be8b4d6ac09dc4c54238d782a34cf1f7c011de9"
+      sha256: b938f77d042cbcd822936a7a359a7235bad8bd72070de1f827efc2cc297ac888
       url: "https://pub.dev"
     source: hosted
-    version: "1.1.1"
+    version: "1.2.0"
   flutter:
     dependency: "direct main"
     description: flutter
     source: sdk
     version: "0.0.0"
-  flutter_layout_grid:
-    dependency: "direct main"
-    description:
-      name: flutter_layout_grid
-      sha256: "739e568db97af031d528dfd8a80d333df0e5a310a126e087690fa42cd61dfb5f"
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.0.8"
   flutter_lints:
     dependency: "direct dev"
     description:
@@ -150,6 +134,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "6.0.0"
+  flutter_screenutil:
+    dependency: "direct main"
+    description:
+      name: flutter_screenutil
+      sha256: "8239210dd68bee6b0577aa4a090890342d04a136ce1c81f98ee513fc0ce891de"
+      url: "https://pub.dev"
+    source: hosted
+    version: "5.9.3"
   flutter_staggered_grid_view:
     dependency: "direct main"
     description:
@@ -163,14 +155,6 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
-  flutter_wall_layout:
-    dependency: "direct main"
-    description:
-      name: flutter_wall_layout
-      sha256: "423b4a32b2cc506a319bd63fc5d7d979d71513734cc677248963e6750454fb85"
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.1.2"
   flutter_web_plugins:
     dependency: transitive
     description: flutter
@@ -196,10 +180,10 @@ packages:
     dependency: transitive
     description:
       name: hooks
-      sha256: "7a08a0d684cb3b8fb604b78455d5d352f502b68079f7b80b831c62220ab0a4f6"
+      sha256: e79ed1e8e1929bc6ecb6ec85f0cb519c887aa5b423705ded0d0f2d9226def388
       url: "https://pub.dev"
     source: hosted
-    version: "1.0.1"
+    version: "1.0.2"
   http:
     dependency: "direct main"
     description:
@@ -220,10 +204,10 @@ packages:
     dependency: transitive
     description:
       name: image
-      sha256: "492bd52f6c4fbb6ee41f781ff27765ce5f627910e1e0cbecfa3d9add5562604c"
+      sha256: f9881ff4998044947ec38d098bc7c8316ae1186fa786eddffdb867b9bc94dfce
       url: "https://pub.dev"
     source: hosted
-    version: "4.7.2"
+    version: "4.8.0"
   intl:
     dependency: "direct main"
     description:
@@ -284,10 +268,10 @@ packages:
     dependency: transitive
     description:
       name: matcher
-      sha256: "12956d0ad8390bbcc63ca2e1469c0619946ccb52809807067a7020d57e647aa6"
+      sha256: dc0b7dc7651697ea4ff3e69ef44b0407ea32c487a39fff6a4004fa585e901861
       url: "https://pub.dev"
     source: hosted
-    version: "0.12.18"
+    version: "0.12.19"
   material_color_utilities:
     dependency: transitive
     description:
@@ -308,10 +292,10 @@ packages:
     dependency: transitive
     description:
       name: native_toolchain_c
-      sha256: "89e83885ba09da5fdf2cdacc8002a712ca238c28b7f717910b34bcd27b0d03ac"
+      sha256: "6ba77bb18063eebe9de401f5e6437e95e1438af0a87a3a39084fbd37c90df572"
       url: "https://pub.dev"
     source: hosted
-    version: "0.17.4"
+    version: "0.17.6"
   objective_c:
     dependency: transitive
     description:
@@ -404,10 +388,10 @@ packages:
     dependency: transitive
     description:
       name: path_provider_android
-      sha256: f2c65e21139ce2c3dad46922be8272bb5963516045659e71bb16e151c93b580e
+      sha256: "149441ca6e4f38193b2e004c0ca6376a3d11f51fa5a77552d8bd4d2b0c0912ba"
       url: "https://pub.dev"
     source: hosted
-    version: "2.2.22"
+    version: "2.2.23"
   path_provider_foundation:
     dependency: transitive
     description:
@@ -468,10 +452,10 @@ packages:
     dependency: transitive
     description:
       name: posix
-      sha256: "6323a5b0fa688b6a010df4905a56b00181479e6d10534cecfecede2aa55add61"
+      sha256: "185ef7606574f789b40f289c233efa52e96dead518aed988e040a10737febb07"
       url: "https://pub.dev"
     source: hosted
-    version: "6.0.3"
+    version: "6.5.0"
   pub_semver:
     dependency: transitive
     description:
@@ -488,14 +472,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.2.2"
-  reorderable_staggered_scroll_view:
-    dependency: "direct main"
-    description:
-      name: reorderable_staggered_scroll_view
-      sha256: "2d4d23be9e2bf833d765b256d2527e74e37957bc623ce13db7a7f507793ba6dc"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.0.2"
   sky_engine:
     dependency: transitive
     description: flutter
@@ -537,50 +513,50 @@ packages:
     dependency: "direct main"
     description:
       name: syncfusion_flutter_charts
-      sha256: "1da213617d8ae57d3a50f1472f5983471aa9468d57ab8da590aab618d18d9a10"
+      sha256: "95eb44257e08dd769e449cd445a35ff38749337a7a37e47b44c30a45d357edb9"
       url: "https://pub.dev"
     source: hosted
-    version: "32.2.5"
+    version: "33.1.46"
   syncfusion_flutter_core:
     dependency: transitive
     description:
       name: syncfusion_flutter_core
-      sha256: "9156e78f47576d576c99b52fb895e67518745e8e2cc35272aa1fa738fa0f0b1e"
+      sha256: "6d2505a8a8f9fcc6a070e07715d7fab06868725bb15b5eaf9432ece807ccd93b"
       url: "https://pub.dev"
     source: hosted
-    version: "32.2.5"
+    version: "33.1.46"
   syncfusion_flutter_datagrid:
     dependency: "direct main"
     description:
       name: syncfusion_flutter_datagrid
-      sha256: bb97f721856316980e74dd57909f8532ab747422e424494e6f601488c2bec8d1
+      sha256: "764174748a0357b1364fbbd9247d0dad99318cca502b1ba92c4ab9eb8260d654"
       url: "https://pub.dev"
     source: hosted
-    version: "32.2.5"
+    version: "33.1.46"
   syncfusion_flutter_pdf:
     dependency: "direct main"
     description:
       name: syncfusion_flutter_pdf
-      sha256: "9a74793cc671a565cb546b4fe58fa8335448609806877d837aade4ad5c12235f"
+      sha256: fd5a031f5eb44d09f01c5411fbe1f4fc6e1a8de20ecc2415336a12305a959ea3
       url: "https://pub.dev"
     source: hosted
-    version: "32.2.4"
+    version: "33.1.46"
   syncfusion_flutter_xlsio:
     dependency: "direct main"
     description:
       name: syncfusion_flutter_xlsio
-      sha256: "9a2e094ce16b30855289164b51319d7cc9e027f0a31c9ced7241d37427f633f7"
+      sha256: "1c173c59d16f9a434213083868bcd3178599f18df4c1efe65af1b53b43e96b62"
       url: "https://pub.dev"
     source: hosted
-    version: "32.2.4"
+    version: "33.1.46"
   syncfusion_officecore:
     dependency: transitive
     description:
       name: syncfusion_officecore
-      sha256: aae4dfb8d25e0fffcebc25345aba61be2328a921ef317a22a6dbf3ca2bb22220
+      sha256: "559b872a521ac4e8515fd27d3de683c9e70e0ccf0eb97317129b74b8bb36a8b7"
       url: "https://pub.dev"
     source: hosted
-    version: "32.2.4"
+    version: "33.1.46"
   term_glyph:
     dependency: transitive
     description:
@@ -593,10 +569,10 @@ packages:
     dependency: transitive
     description:
       name: test_api
-      sha256: "93167629bfc610f71560ab9312acdda4959de4df6fac7492c89ff0d3886f6636"
+      sha256: "8161c84903fd860b26bfdefb7963b3f0b68fee7adea0f59ef805ecca346f0c7a"
       url: "https://pub.dev"
     source: hosted
-    version: "0.7.9"
+    version: "0.7.10"
   typed_data:
     dependency: transitive
     description:
